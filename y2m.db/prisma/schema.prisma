@@ -1,0 +1,221 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String            @id
+  name                  String
+  email                 String?           @unique
+  aboutMe               String?
+  linkedInProfileLink   String?
+  profilePictureURL     String?
+  profileBackgroundURL  String?
+  isMentor              Boolean           @default(false)
+  isMentee              Boolean           @default(false)
+  mentorAreas           String[]          // Areas in which the mentor provides guidance
+  menteeInterests       String[]
+  availability          String?
+  country               String?           // Country code (e.g., 'us', 'ca', etc.)
+  specialization        String?           // Mentor's specialization or title
+  rating                Float?            // Average rating of the mentor
+  role                  String            @default("USER")
+  
+  // Relations
+  milestones            Milestone[]
+  developmentAreas      DevelopmentArea[]
+  badges                Badge[]
+  education             Education[]       // Array of educational qualifications
+  experience            Experience[]      // Array of work experiences
+  skills                Skill[]           // Array of skills
+  mentorFor             MentorMentee[]    @relation(name: "MentorRelation")
+  menteeFor             MentorMentee[]    @relation(name: "MenteeRelation")
+  mentorRequests        MentorshipRequest[] @relation("MentorRequests")
+  menteeRequests        MentorshipRequest[] @relation("MenteeRequests")
+  sentMessages          Message[]         @relation("SentMessages")
+  participatedChats     ChatParticipant[]
+  
+  // Timestamps
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+}
+
+
+model Chat {
+  id            Int               @id @default(autoincrement())
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  participants  ChatParticipant[]
+  messages      Message[]
+}
+
+model ChatParticipant {
+  chatId    Int
+  userId    String
+  joinedAt  DateTime @default(now())
+
+  chat      Chat     @relation(fields: [chatId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@id([chatId, userId])
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  content   String
+  createdAt DateTime @default(now())
+
+  chatId    Int
+  senderId  String
+
+  chat      Chat     @relation(fields: [chatId], references: [id])
+  sender    User     @relation("SentMessages", fields: [senderId], references: [id])
+}
+
+model MentorshipRequest {
+  id        Int      @id @default(autoincrement())
+  mentorId  String
+  menteeId  String
+  status    MentorshipRequestStatus
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  mentor    User     @relation("MentorRequests", fields: [mentorId], references: [id])
+  mentee    User     @relation("MenteeRequests", fields: [menteeId], references: [id])
+
+  @@unique([mentorId, menteeId])
+}
+
+enum MentorshipRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model MentorMentee {
+  mentorId  String
+  menteeId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  mentee User @relation(name: "MenteeRelation", fields: [menteeId], references: [id])
+  mentor User @relation(name: "MentorRelation", fields: [mentorId], references: [id])
+
+  @@id([mentorId, menteeId])
+  @@unique([mentorId, menteeId])
+}
+
+model Education {
+  id           Int       @id @default(autoincrement())
+  userId       String
+  institution  String
+  degree       String
+  fieldOfStudy String
+  startDate    DateTime
+  endDate      DateTime?
+  grade        String?
+  onGoing      Boolean
+  user         User      @relation(fields: [userId], references: [id])
+}
+
+model Experience {
+  id        Int       @id @default(autoincrement())
+  userId    String
+  position  String
+  company   String
+  location  String
+  startDate DateTime
+  endDate   DateTime?
+  current   Boolean
+  user      User      @relation(fields: [userId], references: [id])
+}
+
+model Skill {
+  id     Int    @id @default(autoincrement())
+  userId String
+  name   String
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model BlogPost {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  date      DateTime
+  author    String
+  imagePath String
+}
+
+model Video {
+  id            Int    @id @default(autoincrement())
+  title         String
+  description   String
+  embeddingLink String
+  videoLength   String
+}
+
+model Milestone {
+  id        Int             @id @default(autoincrement())
+  userId    String
+  title     String
+  status    MilestoneStatus
+  startDate DateTime
+  endDate   DateTime
+  user      User            @relation(fields: [userId], references: [id])
+  steps     MilestoneStep[]
+}
+
+model MilestoneStep {
+  id          Int             @id @default(autoincrement())
+  milestoneId Int
+  name        String
+  status      MilestoneStatus
+  milestone   Milestone       @relation(fields: [milestoneId], references: [id])
+}
+
+model DevelopmentArea {
+  id     Int    @id @default(autoincrement())
+  userId String
+  name   String
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Badge {
+  id           Int      @id @default(autoincrement())
+  userId       String
+  name         String
+  icon         String
+  senderName   String
+  receivedDate DateTime
+  message      String
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model GetInTouch {
+  id           Int       @id @default(autoincrement())
+  firstName    String
+  lastName     String
+  email        String
+  demo         Boolean
+  feedback     Boolean
+  question     Boolean
+  message      String
+  receivedDate DateTime?
+}
+
+enum MilestoneStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+
+model A {
+  id    Int    @id @default(autoincrement())
+  name  String
+  email String @unique
+}
